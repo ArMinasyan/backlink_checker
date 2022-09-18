@@ -1,11 +1,10 @@
 import { URL } from 'url';
-import { IOutput } from "./type";
 import * as cheerio from 'cheerio';
-import axios from 'axios'
+import * as request from "superagent";
 
 export class BacklinkChecker {
   private baseUri: string = null;
-  private output: IOutput[] = [];
+  private alreadyChecked = [];
 
   setBaseUri(uri: string) {
     if (uri) {
@@ -18,38 +17,28 @@ export class BacklinkChecker {
     if (endPoint.startsWith('http') || endPoint.startsWith('https')) {
       return endPoint
     }
-    return new URL(endPoint, this.baseUri).href
+    return new URL(endPoint.replace('#', ''), this.baseUri).href
   }
 
+  async startChecking(url: string = this.baseUri) {
+    if (this.alreadyChecked.includes(url)) return;
 
-  async startChecking() {
-    const res = await axios.get(this.baseUri);
-    const $ = cheerio.load(res.data);
-    let singleStatus: IOutput = {
-      _website: [],
-      _link: [],
-      _statusCode: []
-    };
-    for (let a of $('a')) {
-      const link = this.linkTransformer($(a).attr('href'))
-      singleStatus._website.push(this.baseUri)
-      singleStatus._link.push(link);
 
-      try {
-        const res = await axios.get(link);
-        singleStatus._statusCode.push(res.status)
-      } catch (err) {
-        singleStatus._statusCode.push(err.response.status)
-      }
-
-      this.output.push(singleStatus);
-      singleStatus = {
-        _website: [],
-        _link: [],
-        _statusCode: []
-      }
+    this.alreadyChecked.push(url);
+    try {
+      const response = await request.get(url);
+      const $ = cheerio.load(response.text);
+      const links = $("a").map((i, link) => $(link).attr('href')).get();
+      console.log({
+        _website: [this.baseUri],
+        _link: [url],
+        _statusCode: [response.statusCode]
+      });
+      links.filter(lnk => this.linkTransformer(lnk).startsWith(this.baseUri)).forEach(link => {
+        this.startChecking(this.linkTransformer(link));
+      });
+    } catch (err) {
+      return
     }
-
-    return this.output
   }
 }

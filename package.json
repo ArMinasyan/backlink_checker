@@ -14,9 +14,9 @@
     "typescript": "^4.8.3"
   },
   "dependencies": {
-    "@types/axios": "^0.14.0",
     "@types/cheerio": "^0.22.31",
-    "axios": "^0.27.2",
-    "cheerio": "^1.0.0-rc.12"
+    "@types/superagent": "^4.1.15",
+    "cheerio": "^1.0.0-rc.12",
+    "superagent": "^8.0.0"
   }
 }
