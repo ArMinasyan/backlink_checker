@@ -5,7 +5,7 @@ import { IInput, IOutput } from "./type";
 
 export class BacklinkChecker {
   constructor(uris: IInput[]) {
-    if(!uris.length){
+    if (!uris.length) {
       throw new Error('URIs are required.')
     }
 
@@ -14,16 +14,16 @@ export class BacklinkChecker {
 
   private readonly baseUris: string[] = [];
   private baseUri: string = null;
-  private seenUrls = [];
-  private urlQueue = [];
+  private seenUrls: string[] = [];
+  private urlQueue: string[] = [];
 
 
-  private getHost() {
+  private getHost(): string {
     const { hostname } = parse(this.baseUri);
     return hostname
   }
 
-  private async getLinksFromPage(href: string = this.baseUri) {
+  private async getLinksFromPage(href: string = this.baseUri): Promise<{ status: number }> {
     try {
       const { text, statusCode } = await request.get(href);
       if (href.includes(this.getHost())) {
@@ -44,18 +44,17 @@ export class BacklinkChecker {
       }
     } catch (err) {
       return {
-        currentLink: href,
         status: err.response.statusCode || err.request.statusCode
       }
     }
 
   }
 
-  private linkTransformer(endPoint: string) {
+  private linkTransformer(endPoint: string): string {
     return new URL(endPoint, this.baseUri).href
   }
 
-  private async scan(link: string) {
+  private async scan(link: string): Promise<IOutput[]> {
     this.baseUri = link;
     const output: IOutput[] = []
     await this.getLinksFromPage();
@@ -77,7 +76,7 @@ export class BacklinkChecker {
     return output
   }
 
-  async startScan() {
+  async startScan(): Promise<void> {
     const result = [];
     await (async () => {
       for (const link of this.baseUris) {
@@ -88,6 +87,5 @@ export class BacklinkChecker {
     })()
 
     console.log(result);
-    return
   }
 }
