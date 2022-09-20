@@ -1,15 +1,15 @@
 import { parse, URL } from 'url';
 import * as cheerio from 'cheerio';
 import * as request from "superagent";
-import { IInput, IOutput } from "./type";
+import { IOutput } from "./type";
 
-export class BacklinkChecker {
-  constructor(urls: IInput[]) {
+export class CheckLinkStatus {
+  constructor(urls: string[]) {
     if (!urls.length) {
       throw new Error('URLs are required.')
     }
 
-    this.baseUrls = urls.map(uri => uri._website[0].endsWith('/') ? uri._website[0] : `${uri._website[0]}/`)
+    this.baseUrls = urls.map(uri => uri.endsWith('/') ? uri : `${uri}/`)
   }
 
   private readonly baseUrls: string[] = [];
@@ -71,9 +71,8 @@ export class BacklinkChecker {
       const { status } = await this.getLinksFromPage(nextLink);
       this.urlQueue = this.urlQueue.filter(href => href !== currentLink)
       output.push({
-        _website: [this.baseUrl],
-        _link: [currentLink],
-        _statusCode: [status]
+        link: currentLink,
+        status
       })
     }
 
@@ -81,17 +80,15 @@ export class BacklinkChecker {
   }
 
  // Start method
-  async startScan(): Promise<void> {
+  async startScan(): Promise<IOutput[]> {
     const result = [];
     await (async () => {
       for (const link of this.baseUrls) {
-        console.log('Start scanning: ', link)
         result.push(...await this.scan(link));
         this.seenUrls = {};
-        console.log('Finish scanning: ', link)
       }
     })()
 
-    console.log(result);
+    return result
   }
 }

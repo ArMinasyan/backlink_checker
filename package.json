@@ -1,12 +1,17 @@
 {
-  "name": "backlink_checker",
-  "version": "1.0.0",
-  "main": "main.ts",
+  "name": "web_link_status",
+  "version": "1.0.1",
+  "main": "build/LinkStatusChecking.js",
   "license": "MIT",
+  "types": "lib",
+  "author": {
+    "name": "ArMinasyan",
+    "email": "arman.minasyan.dev@gmail.com"
+  },
   "scripts": {
     "start": "node build/main.js",
     "start:dev": "ts-node-dev src/main.ts",
-    "build": "tsc"
+    "build": "tsc -p ."
   },
   "devDependencies": {
     "@types/node": "^18.7.18",
@@ -16,6 +21,7 @@
   "dependencies": {
     "@types/cheerio": "^0.22.31",
     "@types/superagent": "^4.1.15",
+    "check_link_status": "^1.0.0",
     "cheerio": "^1.0.0-rc.12",
     "superagent": "^8.0.0"
   }
