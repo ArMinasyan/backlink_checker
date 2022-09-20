@@ -14,7 +14,7 @@ export class BacklinkChecker {
 
   private readonly baseUrls: string[] = [];
   private baseUrl: string = null;
-  private seenUrls: string[] = [];
+  private seenUrls: {string?: boolean}= {};
   private urlQueue: string[] = [];
 
 
@@ -34,7 +34,7 @@ export class BacklinkChecker {
           const href = $(element).attr('href');
           if (href?.startsWith('https') || href?.startsWith('/')) {
             const transformedLink = this.linkTransformer(href);
-            if (!this.seenUrls.includes(transformedLink)) {
+            if (!this.seenUrls[transformedLink]) {
               this.urlQueue.push(transformedLink)
             }
           }
@@ -67,7 +67,7 @@ export class BacklinkChecker {
     while (this.urlQueue.length > 0) {
       currentLink = this.urlQueue[0];
       nextLink = this.urlQueue[1];
-      this.seenUrls.push(currentLink);
+      this.seenUrls[currentLink] = true
       const { status } = await this.getLinksFromPage(nextLink);
       this.urlQueue = this.urlQueue.filter(href => href !== currentLink)
       output.push({
@@ -87,6 +87,7 @@ export class BacklinkChecker {
       for (const link of this.baseUrls) {
         console.log('Start scanning: ', link)
         result.push(...await this.scan(link));
+        this.seenUrls = {};
         console.log('Finish scanning: ', link)
       }
     })()
