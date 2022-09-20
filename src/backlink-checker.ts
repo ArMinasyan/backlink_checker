@@ -18,11 +18,13 @@ export class BacklinkChecker {
   private urlQueue: string[] = [];
 
 
+  // Return hostname from URI
   private getHost(): string {
     const { hostname } = parse(this.baseUri);
     return hostname
   }
 
+  // Method for getting links from single page
   private async getLinksFromPage(href: string = this.baseUri): Promise<{ status: number }> {
     try {
       const { text, statusCode } = await request.get(href);
@@ -50,10 +52,12 @@ export class BacklinkChecker {
 
   }
 
+  // Transform endPoint to normalized link, base on main URI
   private linkTransformer(endPoint: string): string {
     return new URL(endPoint, this.baseUri).href
   }
 
+  // This method return result for single URI
   private async scan(link: string): Promise<IOutput[]> {
     this.baseUri = link;
     const output: IOutput[] = []
@@ -76,6 +80,7 @@ export class BacklinkChecker {
     return output
   }
 
+ // Start method
   async startScan(): Promise<void> {
     const result = [];
     await (async () => {
