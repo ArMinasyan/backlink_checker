@@ -3,3 +3,7 @@ export interface IOutput {
   _link: string[],
   _statusCode: number[]
 }
+
+export interface IInput {
+  _website: string[]
+}

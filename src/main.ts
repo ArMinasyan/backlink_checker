@@ -1,9 +1,7 @@
-import {BacklinkChecker} from './backlink-checker';
+import { BacklinkChecker } from './backlink-checker';
 
-const backLink = new BacklinkChecker();
-backLink.setBaseUri('https://www.chalkboard.io/');
-backLink.startChecking()
+const backLink = new BacklinkChecker([{
+  _website: ['https://www.chalkboard.io/'],
+}]);
+backLink.startScan();
 
-// backLink.startChecking('https://www.referralcandy.com/').then(data => {
-//   console.log(data)
-// })

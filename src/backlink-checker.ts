@@ -1,44 +1,93 @@
-import { URL } from 'url';
+import { parse, URL } from 'url';
 import * as cheerio from 'cheerio';
 import * as request from "superagent";
+import { IInput, IOutput } from "./type";
 
 export class BacklinkChecker {
+  constructor(uris: IInput[]) {
+    if(!uris.length){
+      throw new Error('URIs are required.')
+    }
+
+    this.baseUris = uris.map(uri => uri._website[0].endsWith('/') ? uri._website[0] : `${uri._website[0]}/`)
+  }
+
+  private readonly baseUris: string[] = [];
   private baseUri: string = null;
-  private alreadyChecked = [];
+  private seenUrls = [];
+  private urlQueue = [];
 
-  setBaseUri(uri: string) {
-    if (uri) {
-      this.baseUri = uri
-    }
-    return
+
+  private getHost() {
+    const { hostname } = parse(this.baseUri);
+    return hostname
   }
 
-  linkTransformer(endPoint: string) {
-    if (endPoint.startsWith('http') || endPoint.startsWith('https')) {
-      return endPoint
-    }
-    return new URL(endPoint.replace('#', ''), this.baseUri).href
-  }
-
-  async startChecking(url: string = this.baseUri) {
-    if (this.alreadyChecked.includes(url)) return;
-
-
-    this.alreadyChecked.push(url);
+  private async getLinksFromPage(href: string = this.baseUri) {
     try {
-      const response = await request.get(url);
-      const $ = cheerio.load(response.text);
-      const links = $("a").map((i, link) => $(link).attr('href')).get();
-      console.log({
-        _website: [this.baseUri],
-        _link: [url],
-        _statusCode: [response.statusCode]
-      });
-      links.filter(lnk => this.linkTransformer(lnk).startsWith(this.baseUri)).forEach(link => {
-        this.startChecking(this.linkTransformer(link));
-      });
+      const { text, statusCode } = await request.get(href);
+      if (href.includes(this.getHost())) {
+        const $ = cheerio.load(text);
+        $('a').each((index, element) => {
+          const href = $(element).attr('href');
+          if (href?.startsWith('https') || href?.startsWith('/')) {
+            const transformedLink = this.linkTransformer(href);
+            if (!this.seenUrls.includes(transformedLink)) {
+              this.urlQueue.push(transformedLink)
+            }
+          }
+        });
+      }
+
+      return {
+        status: statusCode
+      }
     } catch (err) {
-      return
+      return {
+        currentLink: href,
+        status: err.response.statusCode || err.request.statusCode
+      }
     }
+
+  }
+
+  private linkTransformer(endPoint: string) {
+    return new URL(endPoint, this.baseUri).href
+  }
+
+  private async scan(link: string) {
+    this.baseUri = link;
+    const output: IOutput[] = []
+    await this.getLinksFromPage();
+    let nextLink = null,
+      currentLink = null;
+    while (this.urlQueue.length > 0) {
+      currentLink = this.urlQueue[0];
+      nextLink = this.urlQueue[1];
+      this.seenUrls.push(currentLink);
+      const { status } = await this.getLinksFromPage(nextLink);
+      this.urlQueue = this.urlQueue.filter(href => href !== currentLink)
+      output.push({
+        _website: [this.baseUri],
+        _link: [currentLink],
+        _statusCode: [status]
+      })
+    }
+
+    return output
+  }
+
+  async startScan() {
+    const result = [];
+    await (async () => {
+      for (const link of this.baseUris) {
+        console.log('Start scanning: ', link)
+        result.push(...await this.scan(link));
+        console.log('Finish scanning: ', link)
+      }
+    })()
+
+    console.log(result);
+    return
   }
 }
