@@ -4,28 +4,28 @@ import * as request from "superagent";
 import { IInput, IOutput } from "./type";
 
 export class BacklinkChecker {
-  constructor(uris: IInput[]) {
-    if (!uris.length) {
-      throw new Error('URIs are required.')
+  constructor(urls: IInput[]) {
+    if (!urls.length) {
+      throw new Error('URLs are required.')
     }
 
-    this.baseUris = uris.map(uri => uri._website[0].endsWith('/') ? uri._website[0] : `${uri._website[0]}/`)
+    this.baseUrls = urls.map(uri => uri._website[0].endsWith('/') ? uri._website[0] : `${uri._website[0]}/`)
   }
 
-  private readonly baseUris: string[] = [];
-  private baseUri: string = null;
+  private readonly baseUrls: string[] = [];
+  private baseUrl: string = null;
   private seenUrls: string[] = [];
   private urlQueue: string[] = [];
 
 
   // Return hostname from URI
   private getHost(): string {
-    const { hostname } = parse(this.baseUri);
+    const { hostname } = parse(this.baseUrl);
     return hostname
   }
 
   // Method for getting links from single page
-  private async getLinksFromPage(href: string = this.baseUri): Promise<{ status: number }> {
+  private async getLinksFromPage(href: string = this.baseUrl): Promise<{ status: number }> {
     try {
       const { text, statusCode } = await request.get(href);
       if (href.includes(this.getHost())) {
@@ -54,12 +54,12 @@ export class BacklinkChecker {
 
   // Transform endPoint to normalized link, base on main URI
   private linkTransformer(endPoint: string): string {
-    return new URL(endPoint, this.baseUri).href
+    return new URL(endPoint, this.baseUrl).href
   }
 
   // This method return result for single URI
   private async scan(link: string): Promise<IOutput[]> {
-    this.baseUri = link;
+    this.baseUrl = link;
     const output: IOutput[] = []
     await this.getLinksFromPage();
     let nextLink = null,
@@ -71,7 +71,7 @@ export class BacklinkChecker {
       const { status } = await this.getLinksFromPage(nextLink);
       this.urlQueue = this.urlQueue.filter(href => href !== currentLink)
       output.push({
-        _website: [this.baseUri],
+        _website: [this.baseUrl],
         _link: [currentLink],
         _statusCode: [status]
       })
@@ -84,7 +84,7 @@ export class BacklinkChecker {
   async startScan(): Promise<void> {
     const result = [];
     await (async () => {
-      for (const link of this.baseUris) {
+      for (const link of this.baseUrls) {
         console.log('Start scanning: ', link)
         result.push(...await this.scan(link));
         console.log('Finish scanning: ', link)
