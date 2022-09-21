@@ -1,9 +1,15 @@
 {
-  "name": "web_link_status",
-  "version": "2.0.0",
+  "name": "@black_meteor/check-link-status",
+  "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "types": "lib",
+  "keywords": [
+    "scrapper",
+    "crawler",
+    "link checker",
+    "link status"
+  ],
   "author": {
     "name": "ArMinasyan",
     "email": "arman.minasyan.dev@gmail.com"
